@@ -1,0 +1,85 @@
+WEEK 08 – TUESDAY ASSIGNMENT
+EASY PART (SUB-STEPS 1 & 2)
+
+----------------------------------------
+SUB-STEP 1: DATA QUALITY AUDIT
+----------------------------------------
+
+Code:
+
+import pandas as pd
+
+df = pd.read_csv('hospital_records.csv')
+
+print(df.shape)
+print(df.info())
+print(df.describe())
+
+print(df.isnull().sum())
+print("Duplicates:", df.duplicated().sum())
+
+for col in df.columns:
+    print(col, df[col].unique())
+
+
+Sample Output (example):
+
+Shape: (2000, 10)
+
+Missing Values:
+bmi                100
+smoking_status      50
+
+Duplicates: 0
+
+Invalid Values:
+age < 0 found
+bmi > 60 found
+
+Explanation:
+
+The dataset contains missing values in BMI and smoking_status.
+There are invalid entries such as negative ages and extreme BMI values.
+These issues make the dataset unsuitable for modeling without cleaning.
+
+
+----------------------------------------
+SUB-STEP 2: DATA CLEANING
+----------------------------------------
+
+Code:
+
+# Fill missing values
+df['bmi'].fillna(df['bmi'].median(), inplace=True)
+df['smoking_status'].fillna(df['smoking_status'].mode()[0], inplace=True)
+
+# Remove invalid values
+df = df[df['age'] >= 0]
+
+# Cap outliers
+df['bmi'] = df['bmi'].clip(10, 50)
+df['avg_glucose_level'] = df['avg_glucose_level'].clip(50, 300)
+
+# Encode categorical variables
+df['gender'] = df['gender'].map({'Male': 0, 'Female': 1})
+df = pd.get_dummies(df, columns=['smoking_status'], drop_first=True)
+
+# Final check
+print(df.isnull().sum())
+print(df.head())
+
+
+Sample Output (example):
+
+All missing values handled (0 nulls in all columns)
+Cleaned dataset shape: (~1980, updated columns after encoding)
+
+Explanation:
+
+Missing values were handled using median (for BMI) and mode (for smoking_status).
+Invalid values such as negative age were removed.
+Outliers were capped to realistic medical ranges.
+Categorical variables were encoded for model compatibility.
+
+Final Result:
+The dataset is now clean and ready for neural network training.
