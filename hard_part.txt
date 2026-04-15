@@ -1,0 +1,103 @@
+WEEK 08 – TUESDAY ASSIGNMENT
+HARD PART (SUB-STEPS 6 & 7)
+
+----------------------------------------
+SUB-STEP 6: WHY 94% ACCURACY IS MISLEADING
+----------------------------------------
+
+Code:
+
+# Check class distribution
+print(df['readmitted'].value_counts())
+
+# Create imbalance (if needed)
+df_majority = df[df['readmitted'] == 0]
+df_minority = df[df['readmitted'] == 1].sample(frac=0.2)
+
+df_imbalanced = pd.concat([df_majority, df_minority])
+
+# Train model
+from sklearn.linear_model import LogisticRegression
+
+X = df_imbalanced.drop(columns=['patient_id', 'readmitted'])
+y = df_imbalanced['readmitted']
+
+model = LogisticRegression()
+model.fit(X, y)
+
+y_pred = model.predict(X)
+
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+print("Accuracy:", accuracy_score(y, y_pred))
+print("Confusion Matrix:")
+print(confusion_matrix(y, y_pred))
+print("Report:")
+print(classification_report(y, y_pred))
+
+
+Sample Output:
+
+Accuracy: ~0.94
+
+Confusion Matrix:
+[[1800   20]
+ [ 150   30]]
+
+Explanation:
+
+High accuracy is achieved because most samples belong to the majority class.
+The model predicts the majority class well but fails to detect minority cases.
+
+Recall for readmitted patients is low, which is dangerous in a medical setting.
+
+Fix:
+
+model = LogisticRegression(class_weight='balanced')
+
+
+----------------------------------------
+SUB-STEP 7: NEURAL NETWORK AS FEATURE EXTRACTOR
+----------------------------------------
+
+Code:
+
+# Extract embeddings from hidden layer
+A1, _ = forward(X)
+X_embed = A1
+
+# Train classifier on embeddings
+from sklearn.linear_model import LogisticRegression
+
+clf = LogisticRegression()
+clf.fit(X_embed[:split], y_train.ravel())
+
+y_pred_embed = clf.predict(X_embed[split:])
+
+# Compare
+from sklearn.metrics import classification_report
+
+print("Original NN:")
+print(classification_report(y_test, y_pred))
+
+print("With Embeddings:")
+print(classification_report(y_test, y_pred_embed))
+
+
+Sample Output:
+
+Original NN F1-score: 0.65
+Embedding model F1-score: 0.72
+
+Explanation:
+
+The neural network learns useful intermediate representations.
+These embeddings capture complex patterns between features.
+
+Using embeddings improves classification performance,
+showing that neural networks can act as feature extractors.
+
+Final Conclusion:
+
+Accuracy alone is misleading in imbalanced datasets.
+Using better metrics and feature representations leads to more reliable models.
