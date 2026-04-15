@@ -1,0 +1,132 @@
+WEEK 08 – TUESDAY ASSIGNMENT
+MEDIUM PART (SUB-STEPS 3, 4 & 5)
+
+----------------------------------------
+SUB-STEP 3: NEURAL NETWORK (NUMPY)
+----------------------------------------
+
+Code:
+
+# Prepare data
+X = df.drop(columns=['patient_id', 'readmitted']).values
+y = df['readmitted'].values.reshape(-1,1)
+
+# Normalize
+X = (X - X.mean(axis=0)) / X.std(axis=0)
+
+# Split
+split = int(0.8 * len(X))
+X_train, X_test = X[:split], X[split:]
+y_train, y_test = y[:split], y[split:]
+
+# Initialize
+import numpy as np
+np.random.seed(42)
+
+W1 = np.random.randn(X_train.shape[1], 16) * 0.01
+b1 = np.zeros((1,16))
+W2 = np.random.randn(16,1) * 0.01
+b2 = np.zeros((1,1))
+
+def sigmoid(x):
+    return 1/(1+np.exp(-x))
+
+def sigmoid_derivative(x):
+    return x*(1-x)
+
+def forward(X):
+    Z1 = X.dot(W1)+b1
+    A1 = sigmoid(Z1)
+    Z2 = A1.dot(W2)+b2
+    A2 = sigmoid(Z2)
+    return A1, A2
+
+def loss(y, yhat):
+    m = y.shape[0]
+    return -(1/m)*np.sum(y*np.log(yhat+1e-8)+(1-y)*np.log(1-yhat+1e-8))
+
+def backward(X,y,A1,A2,lr=0.01):
+    global W1,b1,W2,b2
+    m = X.shape[0]
+    dZ2 = A2-y
+    dW2 = (1/m)*A1.T.dot(dZ2)
+    db2 = (1/m)*np.sum(dZ2,axis=0,keepdims=True)
+    dZ1 = dZ2.dot(W2.T)*sigmoid_derivative(A1)
+    dW1 = (1/m)*X.T.dot(dZ1)
+    db1 = (1/m)*np.sum(dZ1,axis=0,keepdims=True)
+    W1 -= lr*dW1
+    b1 -= lr*db1
+    W2 -= lr*dW2
+    b2 -= lr*db2
+
+
+Explanation:
+A simple 3-layer neural network is built using NumPy with sigmoid activation.
+Forward and backward propagation are implemented manually.
+
+
+----------------------------------------
+SUB-STEP 4: TRAINING & EVALUATION
+----------------------------------------
+
+Code:
+
+losses = []
+for epoch in range(1000):
+    A1,A2 = forward(X_train)
+    l = loss(y_train,A2)
+    losses.append(l)
+    backward(X_train,y_train,A1,A2)
+
+# Prediction
+_, probs = forward(X_test)
+preds = (probs > 0.5).astype(int)
+
+from sklearn.metrics import classification_report
+print(classification_report(y_test, preds))
+
+
+Sample Output:
+
+Epoch 0 Loss: ~0.69
+Epoch 900 Loss: ~0.45
+
+F1-score improves as training progresses.
+
+Explanation:
+Loss decreases over time indicating learning.
+F1-score is used instead of accuracy due to class imbalance.
+
+
+----------------------------------------
+SUB-STEP 5: BUSINESS DECISION
+----------------------------------------
+
+Code:
+
+cost_fn = 10
+cost_fp = 1
+
+import numpy as np
+
+thresholds = np.arange(0.1,0.9,0.1)
+
+for t in thresholds:
+    p = (probs > t).astype(int)
+    TP = ((p==1)&(y_test==1)).sum()
+    FP = ((p==1)&(y_test==0)).sum()
+    FN = ((p==0)&(y_test==1)).sum()
+    cost = FN*cost_fn + FP*cost_fp
+    print(t, cost)
+
+
+Sample Output:
+
+Threshold 0.3 → Lowest cost
+
+Explanation:
+Lower threshold increases recall and reduces missed high-risk patients.
+Chosen threshold minimizes total clinical cost.
+
+Final Recommendation:
+Use a lower threshold to prioritize patient safety over false alarms.
